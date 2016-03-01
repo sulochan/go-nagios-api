@@ -2,7 +2,6 @@ package api
 
 import (
 	"encoding/json"
-	"flag"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -10,6 +9,7 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/sulochan/go-nagios-api/config"
 )
 
 var (
@@ -53,14 +53,7 @@ type ContactStatus struct {
 	ServiceNotificationsEnabled string `json:"service_notifications_enabled"`
 }
 
-var (
-	objectCacheFile = flag.String("cache-file", "/usr/local/nagios/var/objects.cache", "Nagios object.cache file location")
-	statusFile      = flag.String("status-file", "/usr/local/nagios/var/status.dat", "Nagios status.dat file location")
-	commandFile     = flag.String("command-file", "/usr/local/nagios/var/nagios.cmd", "Nagios command file location")
-)
-
 func init() {
-	flag.Parse()
 	readObjectCache()
 	go spawnRefreshRoutein()
 }
@@ -73,9 +66,10 @@ func spawnRefreshRoutein() {
 }
 
 func readObjectCache() {
-	log.Printf("Reading object cache from %s", *objectCacheFile)
-	log.Printf("Writing commands to %s", *commandFile)
-	dat, err := ioutil.ReadFile(*objectCacheFile)
+	conf := config.GetConfig()
+	log.Printf("Reading object cache from %s", conf.ObjectCacheFile)
+	log.Printf("Writing commands to %s", conf.CommandFile)
+	dat, err := ioutil.ReadFile(conf.ObjectCacheFile)
 	if err != nil {
 		panic(err)
 	}
@@ -143,8 +137,9 @@ func readObjectCache() {
 }
 
 func refreshStatusData() {
-	log.Printf("Refreshig data from %s", *statusFile)
-	dat, err := ioutil.ReadFile(*statusFile)
+	conf := config.GetConfig()
+	log.Printf("Refreshig data from %s", conf.StatusFile)
+	dat, err := ioutil.ReadFile(conf.StatusFile)
 	if err != nil {
 		panic(err)
 	}

@@ -7,12 +7,14 @@ import (
 
 	"github.com/sulochan/go-nagios-api/api"
 	"github.com/sulochan/go-nagios-api/auth"
+	"github.com/sulochan/go-nagios-api/config"
 
 	"github.com/gorilla/mux"
 	"github.com/justinas/alice"
 )
 
 func main() {
+	conf := config.GetConfig()
 	chain := alice.New()
 	router := mux.NewRouter()
 	http.Handle("/", router)
@@ -38,7 +40,7 @@ func main() {
 	router.Handle("/acknowledge_host_problem", chain.Append(auth.AuthHandler).ThenFunc(api.HandleAcknowledgeHostProblem)).Methods("POST")
 	router.Handle("/acknowledge_service_problem", chain.Append(auth.AuthHandler).ThenFunc(api.HandleAcknowledgeServiceProblem)).Methods("POST")
 
-	if err := http.ListenAndServe(fmt.Sprintf(":%s", "8080"), nil); err != nil {
+	if err := http.ListenAndServe(fmt.Sprintf(":%s", conf.Port), nil); err != nil {
 		log.Printf("http.ListendAndServer() failed with %s\n", err)
 	}
 	log.Printf("Exited\n")
