@@ -98,76 +98,423 @@ func HandleAcknowledgeServiceProblem(w http.ResponseWriter, r *http.Request) {
 // POST: /add_host_comment/<host>
 //       {persistent:bool, author:string, comment:string}
 func HandleAddHostComment(w http.ResponseWriter, r *http.Request) {
+	decoder := json.NewDecoder(r.Body)
+	var data struct {
+		Hostname   string
+		Persistent int
+		Author     string
+		Comment    string
+	}
+	err := decoder.Decode(&data)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error: %s", err), 500)
+		return
+	}
+
+	if data.Hostname == "" {
+		http.Error(w, "Missing host", 400)
+		return
+	}
+
+	if data.Persistent == 0 {
+		data.Persistent = 1
+	}
+
+	if data.Author == "" {
+		http.Error(w, fmt.Sprintf("Error: Author field is required"), 400)
+		return
+	}
+
+	if data.Comment == "" {
+		http.Error(w, fmt.Sprintf("Error: Comment can not be empty"), 400)
+		return
+	}
+
+	command := fmt.Sprintf("%s;%s;%d;%s;%s", "ADD_HOST_COMMENT", data.Hostname, data.Persistent, data.Author, data.Comment)
+	WriteCommandToFile(w, command)
+
 }
 
 // HandleAddServiceComment ADD_SVC_COMMENT
 // POST: /add_svc_comment/<host>/<service>
 //       {persistent:bool, author:string, comment:string}
 func HandleAddServiceComment(w http.ResponseWriter, r *http.Request) {
+	decoder := json.NewDecoder(r.Body)
+	var data struct {
+		Hostname   string
+		Service    string
+		Persistent int
+		Author     string
+		Comment    string
+	}
+	err := decoder.Decode(&data)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error: %s", err), 500)
+		return
+	}
+
+	if data.Hostname == "" {
+		http.Error(w, "Missing hostname", 400)
+		return
+	}
+
+	if data.Persistent == 0 {
+		data.Persistent = 1
+	}
+
+	if data.Author == "" {
+		http.Error(w, fmt.Sprintf("Error: Author field is required"), 400)
+		return
+	}
+
+	if data.Service == "" {
+		http.Error(w, fmt.Sprintf("Error: ServiceDesc can not be empty"), 400)
+		return
+	}
+
+	if data.Comment == "" {
+		http.Error(w, fmt.Sprintf("Error: Comment can not be empty"), 400)
+		return
+	}
+
+	command := fmt.Sprintf("%s;%s;%s;%d;%s;%s", "ADD_SVC_COMMENT", data.Hostname, data.Service, data.Persistent, data.Author, data.Comment)
+	WriteCommandToFile(w, command)
 }
 
 // HandleDeleteAllHostCommnet DEL_ALL_HOST_COMMENTS
 func HandleDeleteAllHostCommnet(w http.ResponseWriter, r *http.Request) {
+	decoder := json.NewDecoder(r.Body)
+	var data struct {
+		Hostname string
+	}
+	err := decoder.Decode(&data)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error: %s", err), 400)
+		return
+	}
+
+	if data.Hostname == "" {
+		http.Error(w, fmt.Sprintf("Error: Hostname field is required"), 400)
+		return
+	}
+
+	command := fmt.Sprintf("%s;%s", "DEL_ALL_HOST_COMMENTS", data.Hostname)
+	WriteCommandToFile(w, command)
 }
 
 // HandleDeleteAllServiceComment DEL_ALL_SVC_COMMENTS
 func HandleDeleteAllServiceComment(w http.ResponseWriter, r *http.Request) {
+	decoder := json.NewDecoder(r.Body)
+	var data struct {
+		Hostname string
+	}
+	err := decoder.Decode(&data)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error: %s", err), 400)
+		return
+	}
+
+	if data.Hostname == "" {
+		http.Error(w, fmt.Sprintf("Error: Hostname field is required"), 400)
+		return
+	}
+
+	command := fmt.Sprintf("%s;%s", "DEL_ALL_SVC_COMMENTS", data.Hostname)
+	WriteCommandToFile(w, command)
 }
 
 // HandleDeleteHostComment DEL_HOST_COMMENT
 func HandleDeleteHostComment(w http.ResponseWriter, r *http.Request) {
+	decoder := json.NewDecoder(r.Body)
+	var data struct {
+		CommentID string
+	}
+	err := decoder.Decode(&data)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error: %s", err), 400)
+		return
+	}
+
+	if data.CommentID == "" {
+		http.Error(w, fmt.Sprintf("Error: CommentID field is required"), 400)
+		return
+	}
+
+	command := fmt.Sprintf("%s;%s", "DEL_HOST_COMMENT", data.CommentID)
+	WriteCommandToFile(w, command)
 }
 
 // HandleDeleteServiceComment DEL_SVC_COMMENT
 func HandleDeleteServiceComment(w http.ResponseWriter, r *http.Request) {
+	decoder := json.NewDecoder(r.Body)
+	var data struct {
+		CommentID string
+	}
+	err := decoder.Decode(&data)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error: %s", err), 400)
+		return
+	}
+
+	if data.CommentID == "" {
+		http.Error(w, fmt.Sprintf("Error: CommentID field is required"), 400)
+		return
+	}
+
+	command := fmt.Sprintf("%s;%s", "DEL_SVC_COMMENT", data.CommentID)
+	WriteCommandToFile(w, command)
 }
 
 // HandleDisableAllNotificationBeyondHost DISABLE_ALL_NOTIFICATIONS_BEYOND_HOST
 func HandleDisableAllNotificationBeyondHost(w http.ResponseWriter, r *http.Request) {
+	decoder := json.NewDecoder(r.Body)
+	var data struct {
+		Hostname string
+	}
+	err := decoder.Decode(&data)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error: %s", err), 400)
+		return
+	}
+
+	if data.Hostname == "" {
+		http.Error(w, fmt.Sprintf("Error: Hostname field is required"), 400)
+		return
+	}
+
+	command := fmt.Sprintf("%s;%s", "DISABLE_ALL_NOTIFICATIONS_BEYOND_HOST", data.Hostname)
+	WriteCommandToFile(w, command)
 }
 
 // HandleEnableAllNotificationBeyondHost ENABLE_ALL_NOTIFICATIONS_BEYOND_HOST
 func HandleEnableAllNotificationBeyondHost(w http.ResponseWriter, r *http.Request) {
+	decoder := json.NewDecoder(r.Body)
+	var data struct {
+		Hostname string
+	}
+	err := decoder.Decode(&data)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error: %s", err), 400)
+		return
+	}
+
+	if data.Hostname == "" {
+		http.Error(w, fmt.Sprintf("Error: Hostname field is required"), 400)
+		return
+	}
+
+	command := fmt.Sprintf("%s;%s", "ENABLE_ALL_NOTIFICATIONS_BEYOND_HOST", data.Hostname)
+	WriteCommandToFile(w, command)
 }
 
 // HandleDisableHostgroupHostChecks DISABLE_HOSTGROUP_HOST_CHECKS
 func HandleDisableHostgroupHostChecks(w http.ResponseWriter, r *http.Request) {
+	decoder := json.NewDecoder(r.Body)
+	var data struct {
+		Hostgroup string
+	}
+	err := decoder.Decode(&data)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error: %s", err), 400)
+		return
+	}
+
+	if data.Hostgroup == "" {
+		http.Error(w, fmt.Sprintf("Error: Hostgroup name field is required"), 400)
+		return
+	}
+
+	command := fmt.Sprintf("%s;%s", "DISABLE_HOSTGROUP_HOST_CHECKS", data.Hostgroup)
+	WriteCommandToFile(w, command)
 }
 
 // HandleEnableHostgroupHostChecks ENABLE_HOSTGROUP_HOST_CHECKS
 func HandleEnableHostgroupHostChecks(w http.ResponseWriter, r *http.Request) {
+	decoder := json.NewDecoder(r.Body)
+	var data struct {
+		Hostgroup string
+	}
+	err := decoder.Decode(&data)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error: %s", err), 400)
+		return
+	}
+
+	if data.Hostgroup == "" {
+		http.Error(w, fmt.Sprintf("Error: Hostgroup name field is required"), 400)
+		return
+	}
+
+	command := fmt.Sprintf("%s;%s", "ENABLE_HOSTGROUP_HOST_CHECKS", data.Hostgroup)
+	WriteCommandToFile(w, command)
 }
 
 // HandleDisableHostgroupHostNotification DISABLE_HOSTGROUP_HOST_NOTIFICATIONS
 func HandleDisableHostgroupHostNotification(w http.ResponseWriter, r *http.Request) {
+	decoder := json.NewDecoder(r.Body)
+	var data struct {
+		Hostgroup string
+	}
+	err := decoder.Decode(&data)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error: %s", err), 400)
+		return
+	}
+
+	if data.Hostgroup == "" {
+		http.Error(w, fmt.Sprintf("Error: Hostgroup name field is required"), 400)
+		return
+	}
+
+	command := fmt.Sprintf("%s;%s", "DISABLE_HOSTGROUP_HOST_NOTIFICATIONS", data.Hostgroup)
+	WriteCommandToFile(w, command)
 }
 
 // HandleEnableHostgroupHostNotification ENABLE_HOSTGROUP_HOST_NOTIFICATIONS;<hostgroup_name>
 func HandleEnableHostgroupHostNotification(w http.ResponseWriter, r *http.Request) {
+	decoder := json.NewDecoder(r.Body)
+	var data struct {
+		Hostgroup string
+	}
+	err := decoder.Decode(&data)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error: %s", err), 400)
+		return
+	}
+
+	if data.Hostgroup == "" {
+		http.Error(w, fmt.Sprintf("Error: Hostgroup name field is required"), 400)
+		return
+	}
+
+	command := fmt.Sprintf("%s;%s", "ENABLE_HOSTGROUP_HOST_NOTIFICATIONS", data.Hostgroup)
+	WriteCommandToFile(w, command)
 }
 
 // HandleDisableHostgroupServiceChecks DISABLE_HOSTGROUP_SVC_CHECKS
 func HandleDisableHostgroupServiceChecks(w http.ResponseWriter, r *http.Request) {
+	decoder := json.NewDecoder(r.Body)
+	var data struct {
+		Hostgroup string
+	}
+	err := decoder.Decode(&data)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error: %s", err), 400)
+		return
+	}
+
+	if data.Hostgroup == "" {
+		http.Error(w, fmt.Sprintf("Error: Hostgroup name field is required"), 400)
+		return
+	}
+
+	command := fmt.Sprintf("%s;%s", "DISABLE_HOSTGROUP_SVC_CHECKS", data.Hostgroup)
+	WriteCommandToFile(w, command)
 }
 
 // HandleEnableHostgroupServiceChecks ENABLE_HOSTGROUP_SVC_CHECKS
 func HandleEnableHostgroupServiceChecks(w http.ResponseWriter, r *http.Request) {
+	decoder := json.NewDecoder(r.Body)
+	var data struct {
+		Hostgroup string
+	}
+	err := decoder.Decode(&data)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error: %s", err), 400)
+		return
+	}
+
+	if data.Hostgroup == "" {
+		http.Error(w, fmt.Sprintf("Error: Hostgroup name field is required"), 400)
+		return
+	}
+
+	command := fmt.Sprintf("%s;%s", "ENABLE_HOSTGROUP_SVC_CHECKS", data.Hostgroup)
+	WriteCommandToFile(w, command)
 }
 
 // HandleDisableHostgroupServiceNotifications DISABLE_HOSTGROUP_SVC_NOTIFICATIONS
 func HandleDisableHostgroupServiceNotifications(w http.ResponseWriter, r *http.Request) {
+	decoder := json.NewDecoder(r.Body)
+	var data struct {
+		Hostgroup string
+	}
+	err := decoder.Decode(&data)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error: %s", err), 400)
+		return
+	}
+
+	if data.Hostgroup == "" {
+		http.Error(w, fmt.Sprintf("Error: Hostgroup name field is required"), 400)
+		return
+	}
+
+	command := fmt.Sprintf("%s;%s", "DISABLE_HOSTGROUP_SVC_NOTIFICATIONS", data.Hostgroup)
+	WriteCommandToFile(w, command)
 }
 
 // HandleEnableHostgroupServiceNotifications ENABLE_HOSTGROUP_SVC_NOTIFICATIONS
 func HandleEnableHostgroupServiceNotifications(w http.ResponseWriter, r *http.Request) {
+	decoder := json.NewDecoder(r.Body)
+	var data struct {
+		Hostgroup string
+	}
+	err := decoder.Decode(&data)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error: %s", err), 400)
+		return
+	}
+
+	if data.Hostgroup == "" {
+		http.Error(w, fmt.Sprintf("Error: Hostgroup name field is required"), 400)
+		return
+	}
+
+	command := fmt.Sprintf("%s;%s", "ENABLE_HOSTGROUP_SVC_NOTIFICATIONS", data.Hostgroup)
+	WriteCommandToFile(w, command)
 }
 
 // HandleDisableHostandChildNotifications DISABLE_HOST_AND_CHILD_NOTIFICATIONS
 func HandleDisableHostandChildNotifications(w http.ResponseWriter, r *http.Request) {
+	decoder := json.NewDecoder(r.Body)
+	var data struct {
+		Hostname string
+	}
+	err := decoder.Decode(&data)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error: %s", err), 400)
+		return
+	}
+
+	if data.Hostname == "" {
+		http.Error(w, fmt.Sprintf("Error: Hostname field is required"), 400)
+		return
+	}
+
+	command := fmt.Sprintf("%s;%s", "DISABLE_HOST_AND_CHILD_NOTIFICATIONS", data.Hostname)
+	WriteCommandToFile(w, command)
 }
 
 // ENABLE_HOST_AND_CHILD_NOTIFICATIONS
 func HandleEnableHostandChildNotifications(w http.ResponseWriter, r *http.Request) {
+	decoder := json.NewDecoder(r.Body)
+	var data struct {
+		Hostname string
+	}
+	err := decoder.Decode(&data)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error: %s", err), 400)
+		return
+	}
+
+	if data.Hostname == "" {
+		http.Error(w, fmt.Sprintf("Error: Hostname field is required"), 400)
+		return
+	}
+
+	command := fmt.Sprintf("%s;%s", "ENABLE_HOST_AND_CHILD_NOTIFICATIONS", data.Hostname)
+	WriteCommandToFile(w, command)
 }
 
 // DISABLE_HOST_CHECK
