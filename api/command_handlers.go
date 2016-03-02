@@ -44,6 +44,11 @@ func HandleAcknowledgeHostProblem(w http.ResponseWriter, r *http.Request) {
 		data.Persistent = 1
 	}
 
+	if data.Author == "" {
+		http.Error(w, "Error: Author filed is required", 400)
+		return
+	}
+
 	command := fmt.Sprintf("%s;%s;%d;%d;%d;%s;%s", "ACKNOWLEDGE_HOST_PROBLEM", data.Hostname, data.Sticky, data.Notify, data.Persistent, data.Author, data.Comment)
 	WriteCommandToFile(w, command)
 }

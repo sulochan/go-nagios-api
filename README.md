@@ -4,13 +4,19 @@ Intended to provide a JSON API like features for Nagios installations. Its writt
 
 Installation:
 ==
-1. clone the repo and build for your system.
-2. download the binary for your system.
+>> Follow [golang installation](https://golang.org/doc/install) to install golang.
+>> >> Clone this repo.
+>> >> >> Run: go build . from inside repo directory.
+>> >> >> >> You can now use the standalone binary to run the service.
 
 Run:
 ==
 ```
-$ ./nagios-api --cache-file=/opt/nagios/object.cache --status-file=/opt/nagios/status.dat --command-file=/opt/nagios/nagios.cmd
+$ ./go-nagios-api --port=9090 --cachefile=/opt/nagios/object.cache --statusfile=/opt/nagios/status.dat --commandfile=/opt/nagios/nagios.cmd
+
+Or you can provide a configuration file with these parameter in json format (configuration file overwrites cli flags)
+
+$ ./go-nagios-api --config=nagios-api.json
 ```
 It will start the api service on port 8080. If you wish to change the port simply pass --port=80 to make it run on port 80. For running in production see init scripts.
 
@@ -42,3 +48,25 @@ POST /acknowledge_service_problem
 ...
 see code for full list of available commands.
 ```
+
+#### Examples
+```
+To disable host check for host host1.example.net
+curl -i -XPOST http://127.0.0.1:9090/disable_host_check -d '{"hostname": "host1.example.net"}'
+
+To disable notification for all hosts
+curl -i -XPOST http://127.0.0.1:9090/disable_notifications
+
+To get all configured hostgroups
+curl -i http://127.0.0.1:9090/hostgroups
+
+To disable host check for a particular hostgroup
+curl -i -XPOST http://127.0.0.1:9090/disable_hostgroup_host_checks -d '{"hostgroup":"AwesomeHostGroup"}'
+
+To get details for a given host host1.example.net
+curl -i http://127.0.0.1:9090/host/host1.example.net
+```
+
+#### Missing feature or command
+If there is a feature that you would like to have and is missing please open an issue. Alternatively,
+write the feature and make a pull request.
