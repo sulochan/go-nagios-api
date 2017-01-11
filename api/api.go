@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -13,13 +14,12 @@ import (
 )
 
 var (
-	contactList       []map[string]string
-	contactStatusList []map[string]string
-	serviceStatusList []map[string]string
-	serviceList       []map[string]string
-	hostStatusList    []map[string]string
-	hostList          []map[string]string
-	hostgroupList     []map[string]string
+	contactList   []map[string]string
+	serviceList   []map[string]string
+	hostList      []map[string]string
+	hostgroupList []map[string]string
+	statusData    *StatusData
+	mutex         sync.RWMutex
 )
 
 func stringInSlice(a string, list []string) bool {
@@ -63,9 +63,13 @@ func init() {
 
 func spawnRefreshRoutein() {
 	for {
-		err := refreshStatusData()
+		data, err := refreshStatusData()
 		if err != nil {
 			log.Println("Unable to refresh status data: ", err)
+		} else {
+			mutex.Lock()
+			statusData = data
+			mutex.Unlock()
 		}
 		time.Sleep(60 * time.Second)
 	}
@@ -144,12 +148,19 @@ func readObjectCache() error {
 	return nil
 }
 
-func refreshStatusData() error {
+type StatusData struct {
+	Contacts []map[string]string
+	Services []map[string]string
+	Hosts    []map[string]string
+}
+
+func refreshStatusData() (*StatusData, error) {
+	data := &StatusData{}
 	conf := config.GetConfig()
 	log.Printf("Refreshig data from %s", conf.StatusFile)
 	dat, err := ioutil.ReadFile(conf.StatusFile)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	a := strings.SplitAfterN(string(dat), "}", -1)
@@ -165,7 +176,7 @@ func refreshStatusData() error {
 					contactstatus[strings.TrimSpace(strings.Split(i, "=")[0])] = strings.TrimSpace(strings.Split(i, "=")[1])
 				}
 			}
-			contactStatusList = append(contactStatusList, contactstatus)
+			data.Contacts = append(data.Contacts, contactstatus)
 		}
 
 		if stringInSlice("servicestatus {", lines) {
@@ -178,7 +189,7 @@ func refreshStatusData() error {
 					service[strings.TrimSpace(strings.Split(i, "=")[0])] = strings.TrimSpace(strings.Split(i, "=")[1])
 				}
 			}
-			serviceStatusList = append(serviceStatusList, service)
+			data.Services = append(data.Services, service)
 		}
 
 		if stringInSlice("hoststatus {", lines) {
@@ -190,11 +201,11 @@ func refreshStatusData() error {
 					host[strings.TrimSpace(strings.Split(i, "=")[0])] = strings.TrimSpace(strings.Split(i, "=")[1])
 				}
 			}
-			hostStatusList = append(hostStatusList, host)
+			data.Hosts = append(data.Hosts, host)
 		}
 	}
 
-	return nil
+	return data, nil
 }
 
 // HandleGetContacts returns all configured contactlist
@@ -208,7 +219,9 @@ func HandleGetContacts(w http.ResponseWriter, r *http.Request) {
 // GET: /hoststatus
 func HandleGetAllHostStatus(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(hostStatusList)
+	mutex.RLock()
+	defer mutex.RUnlock()
+	json.NewEncoder(w).Encode(statusData.Hosts)
 }
 
 // HandleGetHostStatusForHost returns hoststatus for requested host only
@@ -221,7 +234,9 @@ func HandleGetHostStatusForHost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	for _, item := range hostStatusList {
+	mutex.RLock()
+	defer mutex.RUnlock()
+	for _, item := range statusData.Hosts {
 		if item["host_name"] == host {
 			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(item)
@@ -237,7 +252,9 @@ func HandleGetHostStatusForHost(w http.ResponseWriter, r *http.Request) {
 // GET: /servicestatus
 func HandleGetServiceStatus(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(serviceStatusList)
+	mutex.RLock()
+	defer mutex.RUnlock()
+	json.NewEncoder(w).Encode(statusData.Services)
 }
 
 // HandleGetServiceStatusForService returns all servicestatus for requested service only
@@ -251,7 +268,9 @@ func HandleGetServiceStatusForService(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var serviceList []map[string]string
-	for _, item := range serviceStatusList {
+	mutex.RLock()
+	defer mutex.RUnlock()
+	for _, item := range statusData.Services {
 		if item["service_description"] == service {
 			serviceList = append(serviceList, item)
 		}
@@ -301,7 +320,9 @@ func HandleGetConfiguredHosts(w http.ResponseWriter, r *http.Request) {
 // GET: /services
 func HandleGetConfiguredServices(w http.ResponseWriter, r *http.Request) {
 	var services []string
-	for _, item := range serviceStatusList {
+	mutex.RLock()
+	defer mutex.RUnlock()
+	for _, item := range statusData.Services {
 		if !stringInSlice(item["service_description"], services) {
 			services = append(services, item["service_description"])
 		}
