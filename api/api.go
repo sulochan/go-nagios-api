@@ -54,24 +54,30 @@ type ContactStatus struct {
 }
 
 func init() {
-	readObjectCache()
+	err := readObjectCache()
+	if err != nil {
+		log.Fatal("Unable to parse object cache file: ", err)
+	}
 	go spawnRefreshRoutein()
 }
 
 func spawnRefreshRoutein() {
 	for {
-		refreshStatusData()
+		err := refreshStatusData()
+		if err != nil {
+			log.Println("Unable to refresh status data: ", err)
+		}
 		time.Sleep(60 * time.Second)
 	}
 }
 
-func readObjectCache() {
+func readObjectCache() error {
 	conf := config.GetConfig()
 	log.Printf("Reading object cache from %s", conf.ObjectCacheFile)
 	log.Printf("Writing commands to %s", conf.CommandFile)
 	dat, err := ioutil.ReadFile(conf.ObjectCacheFile)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	a := strings.SplitAfterN(string(dat), "}", -1)
@@ -134,14 +140,16 @@ func readObjectCache() {
 		}
 
 	}
+
+	return nil
 }
 
-func refreshStatusData() {
+func refreshStatusData() error {
 	conf := config.GetConfig()
 	log.Printf("Refreshig data from %s", conf.StatusFile)
 	dat, err := ioutil.ReadFile(conf.StatusFile)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	a := strings.SplitAfterN(string(dat), "}", -1)
@@ -185,6 +193,8 @@ func refreshStatusData() {
 			hostStatusList = append(hostStatusList, host)
 		}
 	}
+
+	return nil
 }
 
 // HandleGetContacts returns all configured contactlist
