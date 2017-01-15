@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -12,6 +13,11 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/sulochan/go-nagios-api/config"
 )
+
+type Api struct {
+	router *mux.Router
+	addr   string
+}
 
 var (
 	contactList   []map[string]string
@@ -40,12 +46,32 @@ type Info struct {
 	NewVersion       string `json:"new_version"`
 }
 
-func Initialize() {
+func NewApi(addr string) *Api {
+	api := &Api{
+		addr:   addr,
+		router: mux.NewRouter(),
+	}
+
+	api.buildRoutes()
+
+	return api
+}
+
+func (s *Api) Run() error {
 	err := readObjectCache()
 	if err != nil {
-		log.Fatal("Unable to parse object cache file: ", err)
+		return fmt.Errorf("Unable to parse object cache file: %s", err)
 	}
 	go spawnRefreshRoutein()
+
+	http.Handle("/", s.router)
+
+	err = http.ListenAndServe(s.addr, nil)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func spawnRefreshRoutein() {
@@ -206,14 +232,14 @@ func refreshStatusData() (*StatusData, error) {
 
 // HandleGetContacts returns all configured contactlist
 // GET: /contacts
-func HandleGetContacts(w http.ResponseWriter, r *http.Request) {
+func (a *Api) HandleGetContacts(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(contactList)
 }
 
 // HandleGetAllHostStatus returns hoststatus for all hosts
 // GET: /hoststatus
-func HandleGetAllHostStatus(w http.ResponseWriter, r *http.Request) {
+func (a *Api) HandleGetAllHostStatus(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	mutex.RLock()
 	defer mutex.RUnlock()
@@ -222,7 +248,7 @@ func HandleGetAllHostStatus(w http.ResponseWriter, r *http.Request) {
 
 // HandleGetHostStatusForHost returns hoststatus for requested host only
 // GET: /hoststatus/<host>
-func HandleGetHostStatusForHost(w http.ResponseWriter, r *http.Request) {
+func (a *Api) HandleGetHostStatusForHost(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	host, ok := vars["hostname"]
 	if !ok {
@@ -246,7 +272,7 @@ func HandleGetHostStatusForHost(w http.ResponseWriter, r *http.Request) {
 
 // HandleGetServiceStatus return all servicestatus
 // GET: /servicestatus
-func HandleGetServiceStatus(w http.ResponseWriter, r *http.Request) {
+func (a *Api) HandleGetServiceStatus(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	mutex.RLock()
 	defer mutex.RUnlock()
@@ -255,7 +281,7 @@ func HandleGetServiceStatus(w http.ResponseWriter, r *http.Request) {
 
 // HandleGetServiceStatusForService returns all servicestatus for requested service only
 // GET: /servicestatus/<service>
-func HandleGetServiceStatusForService(w http.ResponseWriter, r *http.Request) {
+func (a *Api) HandleGetServiceStatusForService(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	service, ok := vars["service"]
 	if !ok {
@@ -278,7 +304,7 @@ func HandleGetServiceStatusForService(w http.ResponseWriter, r *http.Request) {
 
 // HandleGetHost retruns host info only on the host requested
 // GET: /host/<hostname>
-func HandleGetHost(w http.ResponseWriter, r *http.Request) {
+func (a *Api) HandleGetHost(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	host, ok := vars["hostname"]
 	if !ok {
@@ -300,7 +326,7 @@ func HandleGetHost(w http.ResponseWriter, r *http.Request) {
 
 // HandleGetServicesForHost retruns all services defined for the given host
 // GET: /host/<hostname>/services
-func HandleGetServicesForHost(w http.ResponseWriter, r *http.Request) {
+func (a *Api) HandleGetServicesForHost(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	host, ok := vars["hostname"]
 	if !ok {
@@ -320,7 +346,7 @@ func HandleGetServicesForHost(w http.ResponseWriter, r *http.Request) {
 
 // HandleGetConfiguredHosts returns a list with configured host names
 // GET: /hosts
-func HandleGetConfiguredHosts(w http.ResponseWriter, r *http.Request) {
+func (a *Api) HandleGetConfiguredHosts(w http.ResponseWriter, r *http.Request) {
 	var thesehosts []string
 	for _, item := range hostList {
 		h := item["host_name"]
@@ -334,7 +360,7 @@ func HandleGetConfiguredHosts(w http.ResponseWriter, r *http.Request) {
 
 // HandleGetConfiguredServices returns a list with configured service names
 // GET: /services
-func HandleGetConfiguredServices(w http.ResponseWriter, r *http.Request) {
+func (a *Api) HandleGetConfiguredServices(w http.ResponseWriter, r *http.Request) {
 	var services []string
 	mutex.RLock()
 	defer mutex.RUnlock()
@@ -355,7 +381,7 @@ type hostGroup struct {
 
 // HandleGetHostGroups returns all defined hostgroups
 // GET: /hostgroups
-func HandleGetHostGroups(w http.ResponseWriter, r *http.Request) {
+func (a *Api) HandleGetHostGroups(w http.ResponseWriter, r *http.Request) {
 	var hg []hostGroup
 	for _, item := range hostgroupList {
 		group := hostGroup{HostGroupName: item["hostgroup_name"], Alias: item["alias"], Members: strings.Split(item["members"], ",")}
