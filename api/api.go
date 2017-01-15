@@ -22,15 +22,13 @@ type Api struct {
 	fileCommand     string
 	fileStatus      string
 	statusData      *StatusData
+	staticData      *StaticData
+	contactList     []map[string]string
+	serviceList     []map[string]string
+	hostList        []map[string]string
+	hostgroupList   []map[string]string
+	mutex           sync.RWMutex
 }
-
-var (
-	contactList   []map[string]string
-	serviceList   []map[string]string
-	hostList      []map[string]string
-	hostgroupList []map[string]string
-	mutex         sync.RWMutex
-)
 
 func stringInSlice(a string, list []string) bool {
 	for _, b := range list {
@@ -39,15 +37,6 @@ func stringInSlice(a string, list []string) bool {
 		}
 	}
 	return false
-}
-
-type Info struct {
-	Created          string `json:"created"`
-	Version          string `json:"version"`
-	LastUpdatedCheck string `json:"last_update_check"`
-	UpdateAvailable  string `json:"update_available"`
-	LastVersion      string `json:"last_version"`
-	NewVersion       string `json:"new_version"`
 }
 
 func NewApi(addr, fileObjectCache, fileCommand, fileStatus string) *Api {
@@ -73,7 +62,7 @@ func (s *Api) Run() error {
 	}
 	defer oc.Close()
 
-	err = readObjectCache(oc)
+	s.staticData, err = readObjectCache(oc)
 	if err != nil {
 		return fmt.Errorf("Unable to parse object cache file: %s", err)
 	}
@@ -95,18 +84,19 @@ func (s *Api) spawnRefreshRoutein() {
 		if err != nil {
 			log.Println("Unable to refresh status data: ", err)
 		} else {
-			mutex.Lock()
+			s.mutex.Lock()
 			s.statusData = data
-			mutex.Unlock()
+			s.mutex.Unlock()
 		}
 		time.Sleep(60 * time.Second)
 	}
 }
 
-func readObjectCache(in io.Reader) error {
+func readObjectCache(in io.Reader) (*StaticData, error) {
+	data := NewStaticData()
 	dat, err := ioutil.ReadAll(in)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	a := strings.SplitAfterN(string(dat), "}", -1)
@@ -129,7 +119,7 @@ func readObjectCache(in io.Reader) error {
 					thisgroup[strings.TrimSpace(strings.Fields(i)[0])] = strings.TrimSpace(strings.Fields(i)[1])
 				}
 			}
-			hostgroupList = append(hostgroupList, thisgroup)
+			data.hostgroupList = append(data.hostgroupList, thisgroup)
 		}
 
 		if stringInSlice("define contact {", lines) {
@@ -141,7 +131,7 @@ func readObjectCache(in io.Reader) error {
 					thiscontact[strings.TrimSpace(strings.Fields(i)[0])] = strings.TrimSpace(strings.Fields(i)[1])
 				}
 			}
-			contactList = append(contactList, thiscontact)
+			data.contactList = append(data.contactList, thiscontact)
 		}
 
 		if stringInSlice("define host {", lines) {
@@ -153,7 +143,7 @@ func readObjectCache(in io.Reader) error {
 					thishost[strings.TrimSpace(strings.Fields(i)[0])] = strings.TrimSpace(strings.Fields(i)[1])
 				}
 			}
-			hostList = append(hostList, thishost)
+			data.hostList = append(data.hostList, thishost)
 		}
 
 		if stringInSlice("define service {", lines) {
@@ -165,12 +155,12 @@ func readObjectCache(in io.Reader) error {
 					thisservice[strings.TrimSpace(strings.Fields(i)[0])] = strings.TrimSpace(strings.Fields(i)[1])
 				}
 			}
-			serviceList = append(serviceList, thisservice)
+			data.serviceList = append(data.serviceList, thisservice)
 		}
 
 	}
 
-	return nil
+	return data, nil
 }
 
 type StatusData struct {
@@ -184,6 +174,17 @@ func NewStatusData() *StatusData {
 	return &StatusData{
 		HostServices: make(map[string][]*ServiceStatus),
 	}
+}
+
+type StaticData struct {
+	contactList   []map[string]string
+	serviceList   []map[string]string
+	hostList      []map[string]string
+	hostgroupList []map[string]string
+}
+
+func NewStaticData() *StaticData {
+	return &StaticData{}
 }
 
 type settableType interface {
@@ -256,15 +257,15 @@ func refreshStatusData(fh io.Reader) (*StatusData, error) {
 // GET: /contacts
 func (a *Api) HandleGetContacts(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(contactList)
+	json.NewEncoder(w).Encode(a.contactList)
 }
 
 // HandleGetAllHostStatus returns hoststatus for all hosts
 // GET: /hoststatus
 func (a *Api) HandleGetAllHostStatus(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	mutex.RLock()
-	defer mutex.RUnlock()
+	a.mutex.RLock()
+	defer a.mutex.RUnlock()
 	json.NewEncoder(w).Encode(a.statusData.Hosts)
 }
 
@@ -278,8 +279,8 @@ func (a *Api) HandleGetHostStatusForHost(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	mutex.RLock()
-	defer mutex.RUnlock()
+	a.mutex.RLock()
+	defer a.mutex.RUnlock()
 	for _, item := range a.statusData.Hosts {
 		if item.HostName == host {
 			w.Header().Set("Content-Type", "application/json")
@@ -296,8 +297,8 @@ func (a *Api) HandleGetHostStatusForHost(w http.ResponseWriter, r *http.Request)
 // GET: /servicestatus
 func (a *Api) HandleGetServiceStatus(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	mutex.RLock()
-	defer mutex.RUnlock()
+	a.mutex.RLock()
+	defer a.mutex.RUnlock()
 	json.NewEncoder(w).Encode(a.statusData.Services)
 }
 
@@ -312,8 +313,8 @@ func (a *Api) HandleGetServiceStatusForService(w http.ResponseWriter, r *http.Re
 	}
 
 	var serviceList []*ServiceStatus
-	mutex.RLock()
-	defer mutex.RUnlock()
+	a.mutex.RLock()
+	defer a.mutex.RUnlock()
 	for _, item := range a.statusData.Services {
 		if item.ServiceDescription == service {
 			serviceList = append(serviceList, item)
@@ -334,7 +335,7 @@ func (a *Api) HandleGetHost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	for _, item := range hostList {
+	for _, item := range a.hostList {
 		if item["host_name"] == host {
 			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(item)
@@ -370,7 +371,7 @@ func (a *Api) HandleGetServicesForHost(w http.ResponseWriter, r *http.Request) {
 // GET: /hosts
 func (a *Api) HandleGetConfiguredHosts(w http.ResponseWriter, r *http.Request) {
 	var thesehosts []string
-	for _, item := range hostList {
+	for _, item := range a.staticData.hostList {
 		h := item["host_name"]
 		if !stringInSlice(h, thesehosts) {
 			thesehosts = append(thesehosts, h)
@@ -384,8 +385,8 @@ func (a *Api) HandleGetConfiguredHosts(w http.ResponseWriter, r *http.Request) {
 // GET: /services
 func (a *Api) HandleGetConfiguredServices(w http.ResponseWriter, r *http.Request) {
 	var services []string
-	mutex.RLock()
-	defer mutex.RUnlock()
+	a.mutex.RLock()
+	defer a.mutex.RUnlock()
 	for _, item := range a.statusData.Services {
 		if !stringInSlice(item.ServiceDescription, services) {
 			services = append(services, item.ServiceDescription)
@@ -405,7 +406,7 @@ type hostGroup struct {
 // GET: /hostgroups
 func (a *Api) HandleGetHostGroups(w http.ResponseWriter, r *http.Request) {
 	var hg []hostGroup
-	for _, item := range hostgroupList {
+	for _, item := range a.staticData.hostgroupList {
 		group := hostGroup{HostGroupName: item["hostgroup_name"], Alias: item["alias"], Members: strings.Split(item["members"], ",")}
 		hg = append(hg, group)
 	}
