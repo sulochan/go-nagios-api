@@ -149,13 +149,20 @@ func readObjectCache() error {
 }
 
 type StatusData struct {
-	Contacts []map[string]string
-	Services []map[string]string
-	Hosts    []map[string]string
+	Contacts     []map[string]string
+	Services     []map[string]string
+	Hosts        []map[string]string
+	HostServices map[string][]map[string]string
+}
+
+func NewStatusData() *StatusData {
+	return &StatusData{
+		HostServices: make(map[string][]map[string]string),
+	}
 }
 
 func refreshStatusData() (*StatusData, error) {
-	data := &StatusData{}
+	data := NewStatusData()
 	conf := config.GetConfig()
 	log.Printf("Refreshig data from %s", conf.StatusFile)
 	dat, err := ioutil.ReadFile(conf.StatusFile)
@@ -190,6 +197,7 @@ func refreshStatusData() (*StatusData, error) {
 				}
 			}
 			data.Services = append(data.Services, service)
+			data.HostServices[service["host_name"]] = append(data.HostServices[service["host_name"]], service)
 		}
 
 		if stringInSlice("hoststatus {", lines) {
@@ -300,6 +308,26 @@ func HandleGetHost(w http.ResponseWriter, r *http.Request) {
 
 	http.Error(w, "Host Not Found", 404)
 	return
+}
+
+// HandleGetServicesForHost retruns all services defined for the given host
+// GET: /host/<hostname>/services
+func HandleGetServicesForHost(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	host, ok := vars["hostname"]
+	if !ok {
+		http.Error(w, "Invalid hostname provided", 400)
+		return
+	}
+
+	sList, ok := statusData.HostServices[host]
+	if !ok {
+		http.Error(w, "Host Not Found", 404)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(sList)
 }
 
 // HandleGetConfiguredHosts returns a list with configured host names

@@ -22,6 +22,7 @@ func main() {
 
 	router.Handle("/hosts", chain.Append(auth.AuthHandler).ThenFunc(api.HandleGetConfiguredHosts)).Methods("GET")
 	router.Handle("/host/{hostname:[a-z,A-Z,0-9, _.-]+}", chain.Append(auth.AuthHandler).ThenFunc(api.HandleGetHost)).Methods("GET")
+	router.Handle("/host/{hostname:[a-z,A-Z,0-9, _.-]+}/services", chain.Append(auth.AuthHandler).ThenFunc(api.HandleGetServicesForHost)).Methods("GET")
 	router.Handle("/hoststatus", chain.Append(auth.AuthHandler).ThenFunc(api.HandleGetAllHostStatus)).Methods("GET")
 	router.Handle("/hoststatus/{hostname:[a-z,A-Z,0-9,_.-]+}", chain.Append(auth.AuthHandler).ThenFunc(api.HandleGetHostStatusForHost)).Methods("GET")
 	router.Handle("/hostgroups", chain.Append(auth.AuthHandler).ThenFunc(api.HandleGetHostGroups)).Methods("GET")
