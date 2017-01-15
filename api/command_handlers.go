@@ -50,7 +50,7 @@ func (a *Api) HandleAcknowledgeHostProblem(w http.ResponseWriter, r *http.Reques
 	}
 
 	command := fmt.Sprintf("%s;%s;%d;%d;%d;%s;%s", "ACKNOWLEDGE_HOST_PROBLEM", data.Hostname, data.Sticky, data.Notify, data.Persistent, data.Author, data.Comment)
-	WriteCommandToFile(w, command)
+	a.WriteCommandToFile(w, command)
 }
 
 // HandleAcknowledgeServiceProblem ACKNOWLEDGE_SVC_PROBLEM
@@ -96,7 +96,7 @@ func (a *Api) HandleAcknowledgeServiceProblem(w http.ResponseWriter, r *http.Req
 	}
 
 	command := fmt.Sprintf("%s;%s;%s;%d;%d;%d;%s;%s", "ACKNOWLEDGE_SVC_PROBLEM", data.Hostname, data.ServiceDescription, data.Sticky, data.Notify, data.Persistent, data.Author, data.Comment)
-	WriteCommandToFile(w, command)
+	a.WriteCommandToFile(w, command)
 }
 
 // HandleAddHostComment ADD_HOST_COMMENT
@@ -136,7 +136,7 @@ func (a *Api) HandleAddHostComment(w http.ResponseWriter, r *http.Request) {
 	}
 
 	command := fmt.Sprintf("%s;%s;%d;%s;%s", "ADD_HOST_COMMENT", data.Hostname, data.Persistent, data.Author, data.Comment)
-	WriteCommandToFile(w, command)
+	a.WriteCommandToFile(w, command)
 
 }
 
@@ -183,7 +183,7 @@ func (a *Api) HandleAddServiceComment(w http.ResponseWriter, r *http.Request) {
 	}
 
 	command := fmt.Sprintf("%s;%s;%s;%d;%s;%s", "ADD_SVC_COMMENT", data.Hostname, data.Service, data.Persistent, data.Author, data.Comment)
-	WriteCommandToFile(w, command)
+	a.WriteCommandToFile(w, command)
 }
 
 // HandleDeleteAllHostCommnet DEL_ALL_HOST_COMMENTS
@@ -204,7 +204,7 @@ func (a *Api) HandleDeleteAllHostCommnet(w http.ResponseWriter, r *http.Request)
 	}
 
 	command := fmt.Sprintf("%s;%s", "DEL_ALL_HOST_COMMENTS", data.Hostname)
-	WriteCommandToFile(w, command)
+	a.WriteCommandToFile(w, command)
 }
 
 // HandleDeleteAllServiceComment DEL_ALL_SVC_COMMENTS
@@ -225,7 +225,7 @@ func (a *Api) HandleDeleteAllServiceComment(w http.ResponseWriter, r *http.Reque
 	}
 
 	command := fmt.Sprintf("%s;%s", "DEL_ALL_SVC_COMMENTS", data.Hostname)
-	WriteCommandToFile(w, command)
+	a.WriteCommandToFile(w, command)
 }
 
 // HandleDeleteHostComment DEL_HOST_COMMENT
@@ -246,7 +246,7 @@ func (a *Api) HandleDeleteHostComment(w http.ResponseWriter, r *http.Request) {
 	}
 
 	command := fmt.Sprintf("%s;%s", "DEL_HOST_COMMENT", data.CommentID)
-	WriteCommandToFile(w, command)
+	a.WriteCommandToFile(w, command)
 }
 
 // HandleDeleteServiceComment DEL_SVC_COMMENT
@@ -267,7 +267,7 @@ func (a *Api) HandleDeleteServiceComment(w http.ResponseWriter, r *http.Request)
 	}
 
 	command := fmt.Sprintf("%s;%s", "DEL_SVC_COMMENT", data.CommentID)
-	WriteCommandToFile(w, command)
+	a.WriteCommandToFile(w, command)
 }
 
 // HandleDisableAllNotificationBeyondHost DISABLE_ALL_NOTIFICATIONS_BEYOND_HOST
@@ -288,7 +288,7 @@ func (a *Api) HandleDisableAllNotificationBeyondHost(w http.ResponseWriter, r *h
 	}
 
 	command := fmt.Sprintf("%s;%s", "DISABLE_ALL_NOTIFICATIONS_BEYOND_HOST", data.Hostname)
-	WriteCommandToFile(w, command)
+	a.WriteCommandToFile(w, command)
 }
 
 // HandleEnableAllNotificationBeyondHost ENABLE_ALL_NOTIFICATIONS_BEYOND_HOST
@@ -309,7 +309,7 @@ func (a *Api) HandleEnableAllNotificationBeyondHost(w http.ResponseWriter, r *ht
 	}
 
 	command := fmt.Sprintf("%s;%s", "ENABLE_ALL_NOTIFICATIONS_BEYOND_HOST", data.Hostname)
-	WriteCommandToFile(w, command)
+	a.WriteCommandToFile(w, command)
 }
 
 // HandleDisableHostgroupHostChecks DISABLE_HOSTGROUP_HOST_CHECKS
@@ -330,7 +330,7 @@ func (a *Api) HandleDisableHostgroupHostChecks(w http.ResponseWriter, r *http.Re
 	}
 
 	command := fmt.Sprintf("%s;%s", "DISABLE_HOSTGROUP_HOST_CHECKS", data.Hostgroup)
-	WriteCommandToFile(w, command)
+	a.WriteCommandToFile(w, command)
 }
 
 // HandleEnableHostgroupHostChecks ENABLE_HOSTGROUP_HOST_CHECKS
@@ -351,7 +351,7 @@ func (a *Api) HandleEnableHostgroupHostChecks(w http.ResponseWriter, r *http.Req
 	}
 
 	command := fmt.Sprintf("%s;%s", "ENABLE_HOSTGROUP_HOST_CHECKS", data.Hostgroup)
-	WriteCommandToFile(w, command)
+	a.WriteCommandToFile(w, command)
 }
 
 // HandleDisableHostgroupHostNotification DISABLE_HOSTGROUP_HOST_NOTIFICATIONS
@@ -372,7 +372,7 @@ func (a *Api) HandleDisableHostgroupHostNotification(w http.ResponseWriter, r *h
 	}
 
 	command := fmt.Sprintf("%s;%s", "DISABLE_HOSTGROUP_HOST_NOTIFICATIONS", data.Hostgroup)
-	WriteCommandToFile(w, command)
+	a.WriteCommandToFile(w, command)
 }
 
 // HandleEnableHostgroupHostNotification ENABLE_HOSTGROUP_HOST_NOTIFICATIONS;<hostgroup_name>
@@ -393,7 +393,7 @@ func (a *Api) HandleEnableHostgroupHostNotification(w http.ResponseWriter, r *ht
 	}
 
 	command := fmt.Sprintf("%s;%s", "ENABLE_HOSTGROUP_HOST_NOTIFICATIONS", data.Hostgroup)
-	WriteCommandToFile(w, command)
+	a.WriteCommandToFile(w, command)
 }
 
 // HandleDisableHostgroupServiceChecks DISABLE_HOSTGROUP_SVC_CHECKS
@@ -414,7 +414,7 @@ func (a *Api) HandleDisableHostgroupServiceChecks(w http.ResponseWriter, r *http
 	}
 
 	command := fmt.Sprintf("%s;%s", "DISABLE_HOSTGROUP_SVC_CHECKS", data.Hostgroup)
-	WriteCommandToFile(w, command)
+	a.WriteCommandToFile(w, command)
 }
 
 // HandleEnableHostgroupServiceChecks ENABLE_HOSTGROUP_SVC_CHECKS
@@ -435,7 +435,7 @@ func (a *Api) HandleEnableHostgroupServiceChecks(w http.ResponseWriter, r *http.
 	}
 
 	command := fmt.Sprintf("%s;%s", "ENABLE_HOSTGROUP_SVC_CHECKS", data.Hostgroup)
-	WriteCommandToFile(w, command)
+	a.WriteCommandToFile(w, command)
 }
 
 // HandleDisableHostgroupServiceNotifications DISABLE_HOSTGROUP_SVC_NOTIFICATIONS
@@ -456,7 +456,7 @@ func (a *Api) HandleDisableHostgroupServiceNotifications(w http.ResponseWriter, 
 	}
 
 	command := fmt.Sprintf("%s;%s", "DISABLE_HOSTGROUP_SVC_NOTIFICATIONS", data.Hostgroup)
-	WriteCommandToFile(w, command)
+	a.WriteCommandToFile(w, command)
 }
 
 // HandleEnableHostgroupServiceNotifications ENABLE_HOSTGROUP_SVC_NOTIFICATIONS
@@ -477,7 +477,7 @@ func (a *Api) HandleEnableHostgroupServiceNotifications(w http.ResponseWriter, r
 	}
 
 	command := fmt.Sprintf("%s;%s", "ENABLE_HOSTGROUP_SVC_NOTIFICATIONS", data.Hostgroup)
-	WriteCommandToFile(w, command)
+	a.WriteCommandToFile(w, command)
 }
 
 // HandleDisableHostandChildNotifications DISABLE_HOST_AND_CHILD_NOTIFICATIONS
@@ -498,7 +498,7 @@ func (a *Api) HandleDisableHostandChildNotifications(w http.ResponseWriter, r *h
 	}
 
 	command := fmt.Sprintf("%s;%s", "DISABLE_HOST_AND_CHILD_NOTIFICATIONS", data.Hostname)
-	WriteCommandToFile(w, command)
+	a.WriteCommandToFile(w, command)
 }
 
 // ENABLE_HOST_AND_CHILD_NOTIFICATIONS
@@ -519,7 +519,7 @@ func (a *Api) HandleEnableHostandChildNotifications(w http.ResponseWriter, r *ht
 	}
 
 	command := fmt.Sprintf("%s;%s", "ENABLE_HOST_AND_CHILD_NOTIFICATIONS", data.Hostname)
-	WriteCommandToFile(w, command)
+	a.WriteCommandToFile(w, command)
 }
 
 // DISABLE_HOST_CHECK
@@ -534,7 +534,7 @@ func (a *Api) HandleDisableHostCheck(w http.ResponseWriter, r *http.Request) {
 	}
 
 	command := fmt.Sprintf("%s;%s", "DISABLE_HOST_CHECK", host.Hostname)
-	WriteCommandToFile(w, command)
+	a.WriteCommandToFile(w, command)
 }
 
 // ENABLE_HOST_CHECK
@@ -549,7 +549,7 @@ func (a *Api) HandleEnableHostCheck(w http.ResponseWriter, r *http.Request) {
 	}
 
 	command := fmt.Sprintf("%s;%s", "ENABLE_HOST_CHECK", host.Hostname)
-	WriteCommandToFile(w, command)
+	a.WriteCommandToFile(w, command)
 }
 
 // DISABLE_HOST_NOTIFICATIONS
@@ -564,7 +564,7 @@ func (a *Api) HandleDisableHostNotifications(w http.ResponseWriter, r *http.Requ
 	}
 
 	command := fmt.Sprintf("%s;%s", "DISABLE_HOST_NOTIFICATIONS", host.Hostname)
-	WriteCommandToFile(w, command)
+	a.WriteCommandToFile(w, command)
 }
 
 // ENABLE_HOST_NOTIFICATIONS
@@ -579,21 +579,21 @@ func (a *Api) HandleEnableHostNotifications(w http.ResponseWriter, r *http.Reque
 	}
 
 	command := fmt.Sprintf("%s;%s", "ENABLE_HOST_NOTIFICATIONS", host.Hostname)
-	WriteCommandToFile(w, command)
+	a.WriteCommandToFile(w, command)
 }
 
 // DISABLE_NOTIFICATIONS
 // POST: /disable_notifications
 func (a *Api) HandleDisableNotifications(w http.ResponseWriter, r *http.Request) {
 	command := "DISABLE_NOTIFICATIONS"
-	WriteCommandToFile(w, command)
+	a.WriteCommandToFile(w, command)
 }
 
 // ENABLE_NOTIFICATIONS
 // POST: /enable_notifications
 func (a *Api) HandleEnableNotifications(w http.ResponseWriter, r *http.Request) {
 	command := "ENABLE_NOTIFICATIONS"
-	WriteCommandToFile(w, command)
+	a.WriteCommandToFile(w, command)
 }
 
 // SCHEDULE_FORCED_HOST_CHECK
@@ -621,8 +621,8 @@ func (a *Api) HandleScheduleHostCheck(w http.ResponseWriter, r *http.Request) {
 func (a *Api) HandleScheduleHostDowntime(w http.ResponseWriter, r *http.Request) {
 }
 
-func WriteCommandToFile(w http.ResponseWriter, command string) {
-	if err := WriteCommand(command); err != nil {
+func (a *Api) WriteCommandToFile(w http.ResponseWriter, command string) {
+	if err := a.WriteCommand(command); err != nil {
 		http.Error(w, "Could not execute command", 500)
 		return
 	}

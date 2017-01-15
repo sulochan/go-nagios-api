@@ -23,10 +23,6 @@ type Api struct {
 	fileStatus      string
 	statusData      *StatusData
 	staticData      *StaticData
-	contactList     []map[string]string
-	serviceList     []map[string]string
-	hostList        []map[string]string
-	hostgroupList   []map[string]string
 	mutex           sync.RWMutex
 }
 
@@ -257,7 +253,7 @@ func refreshStatusData(fh io.Reader) (*StatusData, error) {
 // GET: /contacts
 func (a *Api) HandleGetContacts(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(a.contactList)
+	json.NewEncoder(w).Encode(a.staticData.contactList)
 }
 
 // HandleGetAllHostStatus returns hoststatus for all hosts
@@ -330,12 +326,13 @@ func (a *Api) HandleGetServiceStatusForService(w http.ResponseWriter, r *http.Re
 func (a *Api) HandleGetHost(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	host, ok := vars["hostname"]
+	log.Println(host)
 	if !ok {
 		http.Error(w, "Invalid hostname provided", 400)
 		return
 	}
 
-	for _, item := range a.hostList {
+	for _, item := range a.staticData.hostList {
 		if item["host_name"] == host {
 			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(item)

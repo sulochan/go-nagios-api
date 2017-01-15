@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"flag"
 	"io/ioutil"
-	"sync"
 
 	log "github.com/Sirupsen/logrus"
 )
@@ -14,12 +13,10 @@ type Config struct {
 	ObjectCacheFile string
 	StatusFile      string
 	CommandFile     string
-	Logfile         string
 }
 
 var (
 	config          *Config
-	configLock      = new(sync.RWMutex)
 	configfile      *string
 	objectCacheFile *string
 	statusFile      *string
@@ -56,13 +53,9 @@ func loadConfigFile() {
 	if err = json.Unmarshal(file, temp); err != nil {
 		log.Fatal("parse config: ", err)
 	}
-	configLock.Lock()
 	config = temp
-	configLock.Unlock()
 }
 
 func GetConfig() *Config {
-	configLock.RLock()
-	defer configLock.RUnlock()
 	return config
 }
