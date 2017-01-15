@@ -40,20 +40,7 @@ type Info struct {
 	NewVersion       string `json:"new_version"`
 }
 
-type ContactStatus struct {
-	ContactName                 string `json:"contact_name"`
-	ModifiedAttributes          string `json:"modified_attributes"`
-	ModifiedHostAttributes      string `json:"modified_host_attributes"`
-	ModifiedServiceAttributes   string `json:"modified_service_attributes"`
-	HostNotificationPeriod      string `json:"host_notification_period"`
-	ServiceNotification_period  string `json:"service_notification_period"`
-	LastHostNotification        string `json:"last_host_notification"`
-	LastServiceNotification     string `json:"last_service_notification"`
-	HostNotificationsEnabled    string `json:"host_notifications_enabled"`
-	ServiceNotificationsEnabled string `json:"service_notifications_enabled"`
-}
-
-func init() {
+func Initialize() {
 	err := readObjectCache()
 	if err != nil {
 		log.Fatal("Unable to parse object cache file: ", err)
@@ -149,16 +136,36 @@ func readObjectCache() error {
 }
 
 type StatusData struct {
-	Contacts     []map[string]string
-	Services     []map[string]string
-	Hosts        []map[string]string
-	HostServices map[string][]map[string]string
+	Contacts     []*ContactStatus
+	Services     []*ServiceStatus
+	Hosts        []*HostStatus
+	HostServices map[string][]*ServiceStatus
 }
 
 func NewStatusData() *StatusData {
 	return &StatusData{
-		HostServices: make(map[string][]map[string]string),
+		HostServices: make(map[string][]*ServiceStatus),
 	}
+}
+
+type settableType interface {
+	setField(key, value string) error
+}
+
+func parseBlock(o settableType, objecttype string, lines []string) error {
+	start := objecttype + " {"
+	for _, i := range lines {
+		if i == start || i == "    }" || i == "" || strings.TrimSpace(strings.Split(i, " ")[0]) == "}" {
+			// Ignore these lines
+		} else {
+			o.setField(
+				strings.TrimSpace(strings.Split(i, "=")[0]),
+				strings.TrimSpace(strings.Split(i, "=")[1]),
+			)
+		}
+	}
+
+	return nil
 }
 
 func refreshStatusData() (*StatusData, error) {
@@ -174,42 +181,23 @@ func refreshStatusData() (*StatusData, error) {
 	for _, i := range a {
 		lines := strings.Split(i, "\n")
 		if stringInSlice("contactstatus {", lines) {
-			contactstatus := map[string]string{}
-			for _, i := range lines {
-				if i == "contactstatus {" || i == "    }" || i == "" {
-				} else if strings.TrimSpace(strings.Split(i, " ")[0]) == "}" {
-					// Ignore these lines
-				} else {
-					contactstatus[strings.TrimSpace(strings.Split(i, "=")[0])] = strings.TrimSpace(strings.Split(i, "=")[1])
-				}
-			}
-			data.Contacts = append(data.Contacts, contactstatus)
+			obj := &ContactStatus{}
+			parseBlock(obj, "contactstatus", lines)
+			data.Contacts = append(data.Contacts, obj)
 		}
 
 		if stringInSlice("servicestatus {", lines) {
-			service := map[string]string{}
-			for _, i := range lines {
-				if i == "servicestatus {" || i == "    }" || i == "" {
-				} else if strings.TrimSpace(strings.Split(i, " ")[0]) == "}" {
-					// Ignore these lines
-				} else {
-					service[strings.TrimSpace(strings.Split(i, "=")[0])] = strings.TrimSpace(strings.Split(i, "=")[1])
-				}
-			}
-			data.Services = append(data.Services, service)
-			data.HostServices[service["host_name"]] = append(data.HostServices[service["host_name"]], service)
+			obj := &ServiceStatus{}
+			parseBlock(obj, "servicestatus", lines)
+			data.Services = append(data.Services, obj)
+
+			data.HostServices[obj.HostName] = append(data.HostServices[obj.HostName], obj)
 		}
 
 		if stringInSlice("hoststatus {", lines) {
-			host := map[string]string{}
-			for _, i := range lines {
-				if i == "hoststatus {" || i == "	}" || i == "" {
-					// Ignore these lines
-				} else {
-					host[strings.TrimSpace(strings.Split(i, "=")[0])] = strings.TrimSpace(strings.Split(i, "=")[1])
-				}
-			}
-			data.Hosts = append(data.Hosts, host)
+			obj := &HostStatus{}
+			parseBlock(obj, "hoststatus", lines)
+			data.Hosts = append(data.Hosts, obj)
 		}
 	}
 
@@ -245,7 +233,7 @@ func HandleGetHostStatusForHost(w http.ResponseWriter, r *http.Request) {
 	mutex.RLock()
 	defer mutex.RUnlock()
 	for _, item := range statusData.Hosts {
-		if item["host_name"] == host {
+		if item.HostName == host {
 			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(item)
 			return
@@ -275,11 +263,11 @@ func HandleGetServiceStatusForService(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var serviceList []map[string]string
+	var serviceList []*ServiceStatus
 	mutex.RLock()
 	defer mutex.RUnlock()
 	for _, item := range statusData.Services {
-		if item["service_description"] == service {
+		if item.ServiceDescription == service {
 			serviceList = append(serviceList, item)
 		}
 	}
@@ -351,8 +339,8 @@ func HandleGetConfiguredServices(w http.ResponseWriter, r *http.Request) {
 	mutex.RLock()
 	defer mutex.RUnlock()
 	for _, item := range statusData.Services {
-		if !stringInSlice(item["service_description"], services) {
-			services = append(services, item["service_description"])
+		if !stringInSlice(item.ServiceDescription, services) {
+			services = append(services, item.ServiceDescription)
 		}
 	}
 	w.Header().Set("Content-Type", "application/json")

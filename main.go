@@ -17,6 +17,7 @@ func main() {
 	conf := config.GetConfig()
 	chain := alice.New()
 	router := mux.NewRouter()
+	api.Initialize()
 	http.Handle("/", router)
 	router.Handle("/contacts", chain.Append(auth.AuthHandler).ThenFunc(api.HandleGetContacts)).Methods("GET")
 
