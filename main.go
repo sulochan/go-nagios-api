@@ -9,7 +9,7 @@ import (
 
 func main() {
 	conf := config.GetConfig()
-	api := api.NewApi(conf.Addr)
+	api := api.NewApi(conf.Addr, conf.ObjectCacheFile, conf.CommandFile, conf.StatusFile)
 
 	err := api.Run()
 	if err != nil {

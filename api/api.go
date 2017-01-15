@@ -3,20 +3,25 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/gorilla/mux"
-	"github.com/sulochan/go-nagios-api/config"
 )
 
 type Api struct {
-	router *mux.Router
-	addr   string
+	router          *mux.Router
+	addr            string
+	fileObjectCache string
+	fileCommand     string
+	fileStatus      string
+	statusData      *StatusData
 }
 
 var (
@@ -24,7 +29,6 @@ var (
 	serviceList   []map[string]string
 	hostList      []map[string]string
 	hostgroupList []map[string]string
-	statusData    *StatusData
 	mutex         sync.RWMutex
 )
 
@@ -46,23 +50,34 @@ type Info struct {
 	NewVersion       string `json:"new_version"`
 }
 
-func NewApi(addr string) *Api {
+func NewApi(addr, fileObjectCache, fileCommand, fileStatus string) *Api {
 	api := &Api{
-		addr:   addr,
-		router: mux.NewRouter(),
+		addr:            addr,
+		router:          mux.NewRouter(),
+		fileObjectCache: fileObjectCache,
+		fileCommand:     fileCommand,
+		fileStatus:      fileStatus,
 	}
 
 	api.buildRoutes()
-
 	return api
 }
 
 func (s *Api) Run() error {
-	err := readObjectCache()
+	log.Println("Reading object cache from ", s.fileObjectCache)
+	log.Println("Writing commands to ", s.fileCommand)
+
+	oc, err := os.Open(s.fileObjectCache)
+	if err != nil {
+		return err
+	}
+	defer oc.Close()
+
+	err = readObjectCache(oc)
 	if err != nil {
 		return fmt.Errorf("Unable to parse object cache file: %s", err)
 	}
-	go spawnRefreshRoutein()
+	go s.spawnRefreshRoutein()
 
 	http.Handle("/", s.router)
 
@@ -74,25 +89,22 @@ func (s *Api) Run() error {
 	return nil
 }
 
-func spawnRefreshRoutein() {
+func (s *Api) spawnRefreshRoutein() {
 	for {
-		data, err := refreshStatusData()
+		data, err := s.refreshStatusDataFile()
 		if err != nil {
 			log.Println("Unable to refresh status data: ", err)
 		} else {
 			mutex.Lock()
-			statusData = data
+			s.statusData = data
 			mutex.Unlock()
 		}
 		time.Sleep(60 * time.Second)
 	}
 }
 
-func readObjectCache() error {
-	conf := config.GetConfig()
-	log.Printf("Reading object cache from %s", conf.ObjectCacheFile)
-	log.Printf("Writing commands to %s", conf.CommandFile)
-	dat, err := ioutil.ReadFile(conf.ObjectCacheFile)
+func readObjectCache(in io.Reader) error {
+	dat, err := ioutil.ReadAll(in)
 	if err != nil {
 		return err
 	}
@@ -194,11 +206,21 @@ func parseBlock(o settableType, objecttype string, lines []string) error {
 	return nil
 }
 
-func refreshStatusData() (*StatusData, error) {
+func (s *Api) refreshStatusDataFile() (*StatusData, error) {
+	log.Println("Refreshig data from ", s.fileStatus)
+
+	fh, err := os.Open(s.fileStatus)
+	if err != nil {
+		return nil, err
+	}
+	defer fh.Close()
+
+	return refreshStatusData(fh)
+}
+
+func refreshStatusData(fh io.Reader) (*StatusData, error) {
 	data := NewStatusData()
-	conf := config.GetConfig()
-	log.Printf("Refreshig data from %s", conf.StatusFile)
-	dat, err := ioutil.ReadFile(conf.StatusFile)
+	dat, err := ioutil.ReadAll(fh)
 	if err != nil {
 		return nil, err
 	}
@@ -243,7 +265,7 @@ func (a *Api) HandleGetAllHostStatus(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	mutex.RLock()
 	defer mutex.RUnlock()
-	json.NewEncoder(w).Encode(statusData.Hosts)
+	json.NewEncoder(w).Encode(a.statusData.Hosts)
 }
 
 // HandleGetHostStatusForHost returns hoststatus for requested host only
@@ -258,7 +280,7 @@ func (a *Api) HandleGetHostStatusForHost(w http.ResponseWriter, r *http.Request)
 
 	mutex.RLock()
 	defer mutex.RUnlock()
-	for _, item := range statusData.Hosts {
+	for _, item := range a.statusData.Hosts {
 		if item.HostName == host {
 			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(item)
@@ -276,7 +298,7 @@ func (a *Api) HandleGetServiceStatus(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	mutex.RLock()
 	defer mutex.RUnlock()
-	json.NewEncoder(w).Encode(statusData.Services)
+	json.NewEncoder(w).Encode(a.statusData.Services)
 }
 
 // HandleGetServiceStatusForService returns all servicestatus for requested service only
@@ -292,7 +314,7 @@ func (a *Api) HandleGetServiceStatusForService(w http.ResponseWriter, r *http.Re
 	var serviceList []*ServiceStatus
 	mutex.RLock()
 	defer mutex.RUnlock()
-	for _, item := range statusData.Services {
+	for _, item := range a.statusData.Services {
 		if item.ServiceDescription == service {
 			serviceList = append(serviceList, item)
 		}
@@ -334,7 +356,7 @@ func (a *Api) HandleGetServicesForHost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sList, ok := statusData.HostServices[host]
+	sList, ok := a.statusData.HostServices[host]
 	if !ok {
 		http.Error(w, "Host Not Found", 404)
 		return
@@ -364,7 +386,7 @@ func (a *Api) HandleGetConfiguredServices(w http.ResponseWriter, r *http.Request
 	var services []string
 	mutex.RLock()
 	defer mutex.RUnlock()
-	for _, item := range statusData.Services {
+	for _, item := range a.statusData.Services {
 		if !stringInSlice(item.ServiceDescription, services) {
 			services = append(services, item.ServiceDescription)
 		}
