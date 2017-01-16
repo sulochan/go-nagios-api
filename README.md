@@ -12,13 +12,13 @@ Installation:
 Run:
 ==
 ```
-$ ./go-nagios-api --port=9090 --cachefile=/opt/nagios/object.cache --statusfile=/opt/nagios/status.dat --commandfile=/opt/nagios/nagios.cmd
+$ ./go-nagios-api --addr=:9090 --cachefile=/opt/nagios/object.cache --statusfile=/opt/nagios/status.dat --commandfile=/opt/nagios/nagios.cmd
 
 Or you can provide a configuration file with these parameter in json format (configuration file overwrites cli flags)
 
 $ ./go-nagios-api --config=nagios-api.json
 ```
-It will start the api service on port 8080. If you wish to change the port simply pass --port=80 to make it run on port 80. For running in production see init scripts.
+It will start the api service on port 8080. If you wish to change the port simply pass --addr=:80 to make it run on port 80. For running in production see init scripts.
 
 API Calls
 ==
