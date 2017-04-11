@@ -619,11 +619,53 @@ func (a *Api) HandleScheduleHostCheck(w http.ResponseWriter, r *http.Request) {
 // SCHEDULE_HOST_DOWNTIME
 // SCHEDULE_HOST_DOWNTIME;<host_name>;<start_time>;<end_time>;<fixed>;<trigger_id>;<duration>;<author>;<comment>
 func (a *Api) HandleScheduleHostDowntime(w http.ResponseWriter, r *http.Request) {
+	decoder := json.NewDecoder(r.Body)
+	var data struct {
+		Hostname  string `json:"hostname"`
+		StartTime int64  `json:"start_time"`
+		EndTime   int64  `json:"end_time"`
+		Fixed     uint8  `json:"fixed"`
+		TriggerId int64  `json:"trigger_id"`
+		Duration  int64  `json:"duration"`
+		Author    string `json:"author"`
+		Comment   string `json:"comment"`
+	}
+	err := decoder.Decode(&data)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error: %s", err), http.StatusInternalServerError)
+		return
+	}
+
+	if data.Hostname == "" {
+		http.Error(w, "Missing host", http.StatusBadRequest)
+		return
+	}
+
+	if data.Author == "" {
+		http.Error(w, fmt.Sprintf("Error: Author field is required"), http.StatusBadRequest)
+		return
+	}
+
+	if data.Comment == "" {
+		http.Error(w, fmt.Sprintf("Error: Comment can not be empty"), http.StatusBadRequest)
+		return
+	}
+
+	if data.StartTime >= data.EndTime {
+		http.Error(w, "start_time must be less than end_time", http.StatusBadRequest)
+	}
+
+	if data.Duration == 0 {
+		http.Error(w, "duration of maintenance must be greater than 0 seconds", http.StatusBadRequest)
+	}
+
+	command := fmt.Sprintf("%s;%s;%d;%d;%d;%d;%d;%s;%s", "SCHEDULE_HOST_DOWNTIME", data.Hostname, data.StartTime, data.EndTime, data.Fixed, data.TriggerId, data.Duration, data.Author, data.Comment)
+	a.WriteCommandToFile(w, command)
 }
 
 func (a *Api) WriteCommandToFile(w http.ResponseWriter, command string) {
 	if err := a.WriteCommand(command); err != nil {
-		http.Error(w, "Could not execute command", 500)
+		http.Error(w, "Could not execute command", http.StatusInternalServerError)
 		return
 	}
 }
