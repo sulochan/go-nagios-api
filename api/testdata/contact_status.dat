@@ -9,4 +9,5 @@ contactstatus {
     last_service_notification=1484082873
     host_notifications_enabled=1
     service_notifications_enabled=1
+    _SOMECUSTOMVAR=0;http://example.com/customvar
     }

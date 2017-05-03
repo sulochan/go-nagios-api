@@ -185,6 +185,7 @@ func NewStaticData() *StaticData {
 
 type settableType interface {
 	setField(key, value string) error
+	setCustomVariable(key, value string)
 }
 
 func parseBlock(o settableType, objecttype string, lines []string) error {
@@ -193,10 +194,12 @@ func parseBlock(o settableType, objecttype string, lines []string) error {
 		if i == start || i == "    }" || i == "" || strings.TrimSpace(strings.Split(i, " ")[0]) == "}" {
 			// Ignore these lines
 		} else {
-			o.setField(
-				strings.TrimSpace(strings.Split(i, "=")[0]),
-				strings.TrimSpace(strings.Split(i, "=")[1]),
-			)
+			pieces := strings.SplitN(strings.TrimSpace(i), "=", 2)
+			if strings.HasPrefix(pieces[0], "_") {
+				o.setCustomVariable(strings.TrimPrefix(pieces[0], "_"), strings.SplitN(pieces[1], ";", 2)[1])
+			} else {
+				o.setField(pieces[0], pieces[1])
+			}
 		}
 	}
 

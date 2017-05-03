@@ -45,4 +45,10 @@ func TestParseBlock(t *testing.T) {
 	is.Equal(c.ModifiedHostAttributes, "0")
 	is.Equal(c.LastHostNotification, "1481756484")
 	is.Equal(c.ServiceNotificationPeriod, "24x7")
+
+	is.NotNil(c.CustomVariables)
+	is.Equal(len(c.CustomVariables), 1)
+	val, ok := c.CustomVariables["SOMECUSTOMVAR"]
+	is.OK(ok)
+	is.Equal(val, "http://example.com/customvar")
 }
