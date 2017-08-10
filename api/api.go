@@ -357,6 +357,9 @@ func (a *Api) HandleGetServicesForHost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	a.mutex.RLock()
+	defer a.mutex.RUnlock()
+
 	sList, ok := a.statusData.HostServices[host]
 	if !ok {
 		http.Error(w, "Host Not Found", 404)
