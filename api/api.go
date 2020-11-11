@@ -112,9 +112,9 @@ func readObjectCache(in io.Reader) (*StaticData, error) {
 				if i == "define hostgroup {" || strings.TrimSpace(i) == "}" || i == "" {
 					// Ignore these lines
 				} else {
-          if(len(strings.Fields(i)) != 0){
-            thisgroup[strings.TrimSpace(strings.Fields(i)[0])] = strings.Join(strings.Fields(i)[1:], " ")
-          }
+					if len(strings.Fields(i)) != 0 {
+						thisgroup[strings.TrimSpace(strings.Fields(i)[0])] = strings.Join(strings.Fields(i)[1:], " ")
+					}
 				}
 			}
 			data.hostgroupList = append(data.hostgroupList, thisgroup)
@@ -126,9 +126,9 @@ func readObjectCache(in io.Reader) (*StaticData, error) {
 				if i == "define contact {" || strings.TrimSpace(i) == "}" || i == "" {
 					// Ignore these lines
 				} else {
-          if(len(strings.Fields(i)) != 0) {
-					  thiscontact[strings.TrimSpace(strings.Fields(i)[0])] = strings.Join(strings.Fields(i)[1:], " ")
-				  }
+					if len(strings.Fields(i)) != 0 {
+						thiscontact[strings.TrimSpace(strings.Fields(i)[0])] = strings.Join(strings.Fields(i)[1:], " ")
+					}
 				}
 			}
 			data.contactList = append(data.contactList, thiscontact)
@@ -140,9 +140,9 @@ func readObjectCache(in io.Reader) (*StaticData, error) {
 				if i == "define host {" || strings.TrimSpace(i) == "}" || i == "" {
 					// Ignore these lines
 				} else {
-          if(len(strings.Fields(i)) != 0) {
-					  thishost[strings.TrimSpace(strings.Fields(i)[0])] = strings.Join(strings.Fields(i)[1:], " ")
-			    }
+					if len(strings.Fields(i)) != 0 {
+						thishost[strings.TrimSpace(strings.Fields(i)[0])] = strings.Join(strings.Fields(i)[1:], " ")
+					}
 				}
 			}
 			data.hostList = append(data.hostList, thishost)
@@ -154,9 +154,9 @@ func readObjectCache(in io.Reader) (*StaticData, error) {
 				if i == "define service {" || strings.TrimSpace(i) == "}" || i == "" {
 					// Ignore these lines
 				} else {
-          if(len(strings.Fields(i)) != 0) {
-					  thisservice[strings.TrimSpace(strings.Fields(i)[0])] = strings.Join(strings.Fields(i)[1:], " ")
-			    }
+					if len(strings.Fields(i)) != 0 {
+						thisservice[strings.TrimSpace(strings.Fields(i)[0])] = strings.Join(strings.Fields(i)[1:], " ")
+					}
 				}
 			}
 			data.serviceList = append(data.serviceList, thisservice)
@@ -215,7 +215,7 @@ func parseBlock(o settableType, objecttype string, lines []string) error {
 }
 
 func (s *Api) refreshStatusDataFile() (*StatusData, error) {
-	log.Println("Refreshig data from ", s.fileStatus)
+	log.Println("Refreshing data from ", s.fileStatus)
 
 	fh, err := os.Open(s.fileStatus)
 	if err != nil {

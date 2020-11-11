@@ -33,7 +33,7 @@ func (s *Api) buildRoutes() {
 	s.router.Handle("/acknowledge_service_problem", chain.Append(auth.AuthHandler).ThenFunc(s.HandleAcknowledgeServiceProblem)).Methods("POST")
 	s.router.Handle("/add_host_comment", chain.Append(auth.AuthHandler).ThenFunc(s.HandleAddHostComment)).Methods("POST")
 	s.router.Handle("/add_svc_comment", chain.Append(auth.AuthHandler).ThenFunc(s.HandleAddServiceComment)).Methods("POST")
-	s.router.Handle("/del_all_host_comment", chain.Append(auth.AuthHandler).ThenFunc(s.HandleDeleteAllHostCommnet)).Methods("POST")
+	s.router.Handle("/del_all_host_comment", chain.Append(auth.AuthHandler).ThenFunc(s.HandleDeleteAllHostComment)).Methods("POST")
 	s.router.Handle("/del_all_svc_comment", chain.Append(auth.AuthHandler).ThenFunc(s.HandleDeleteAllServiceComment)).Methods("POST")
 	s.router.Handle("/del_host_comment", chain.Append(auth.AuthHandler).ThenFunc(s.HandleDeleteHostComment)).Methods("POST")
 	s.router.Handle("/del_svc_comment", chain.Append(auth.AuthHandler).ThenFunc(s.HandleDeleteServiceComment)).Methods("POST")
