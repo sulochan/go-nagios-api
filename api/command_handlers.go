@@ -186,8 +186,8 @@ func (a *Api) HandleAddServiceComment(w http.ResponseWriter, r *http.Request) {
 	a.WriteCommandToFile(w, command)
 }
 
-// HandleDeleteAllHostCommnet DEL_ALL_HOST_COMMENTS
-func (a *Api) HandleDeleteAllHostCommnet(w http.ResponseWriter, r *http.Request) {
+// HandleDeleteAllHostComment DEL_ALL_HOST_COMMENTS
+func (a *Api) HandleDeleteAllHostComment(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	var data struct {
 		Hostname string
